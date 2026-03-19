@@ -32,7 +32,7 @@ def extract_main_content(html: str, url: str) -> Optional[str]:
             include_tables=True,
             no_fallback=False,
         )
-        if text and len(text.strip()) > 100:
+        if text and len(text.strip()) > 50:  # Lower threshold
             return text.strip()
     except ImportError:
         logger.warning("trafilatura not installed, falling back to BeautifulSoup")
@@ -55,7 +55,7 @@ def extract_main_content(html: str, url: str) -> Optional[str]:
         text = soup.get_text(separator="\n", strip=True)
 
         # Clean up
-        lines = [line.strip() for line in text.split("\n") if len(line.strip()) > 20]
+        lines = [line.strip() for line in text.split("\n") if len(line.strip()) > 10]  # Lower threshold
         return "\n".join(lines) if lines else None
 
     except ImportError:
@@ -175,7 +175,7 @@ async def fetch_page(
 
         # Extract content
         content = extract_main_content(html, url)
-        if not content or len(content) < 100:
+        if not content or len(content) < 50:  # Lower threshold
             logger.debug(f"Skipping {url} — insufficient content")
             return None
 

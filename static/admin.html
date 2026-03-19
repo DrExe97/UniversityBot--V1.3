@@ -358,7 +358,7 @@
       <div style="padding:0">
         <table id="conv-table">
           <thead><tr><th>Question</th><th>Answer</th><th>Confidence</th><th>Model</th><th>Rating</th><th>Time</th></tr></thead>
-          <tbody id="conv-body"><tr><td colspan="6" style="color:var(--muted);text-align:center;padding:20px">Enter a session ID to search</td></tr></tbody>
+          <tbody id="conv-body"><tr><td colspan="6" style="color:var(--muted);text-align:center;padding:20px">Loading recent conversations...</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -398,6 +398,7 @@ function showPage(name) {
 
   if (name === 'dashboard')     loadDashboard();
   if (name === 'knowledge')     loadKnowledge();
+  if (name === 'conversations') loadConversations();
   if (name === 'flagged')       loadFlagged();
 }
 
@@ -512,6 +513,34 @@ async function deleteSource(id, name) {
     loadKnowledge();
   } catch (e) {
     alert('Delete failed: ' + e.message);
+  }
+}
+
+// ── CONVERSATIONS ──
+async function loadConversations() {
+  try {
+    const res = await fetch(`${API}/conversations?limit=20`);
+    const d = await res.json();
+    const tbody = document.getElementById('conv-body');
+
+    if (!d.conversations.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="color:var(--muted);text-align:center;padding:20px">No conversations yet</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = d.conversations.map(c => {
+      const col = c.confidence > .7 ? 'green' : c.confidence > .4 ? 'yellow' : 'red';
+      return `<tr>
+        <td class="q-text">${escHtml(c.question)}</td>
+        <td class="q-text" style="color:var(--muted)">${escHtml(c.answer.slice(0, 80))}...</td>
+        <td><span class="badge ${col}">${(c.confidence * 100).toFixed(0)}%</span></td>
+        <td style="font-family:var(--mono);font-size:11px">${c.model_used}</td>
+        <td>${c.rating ? '★'.repeat(c.rating) : '—'}</td>
+        <td style="font-size:11px;color:var(--muted)">${new Date(c.created_at).toLocaleString()}</td>
+      </tr>`;
+    }).join('');
+  } catch (e) {
+    console.error('Conversations load failed:', e);
   }
 }
 

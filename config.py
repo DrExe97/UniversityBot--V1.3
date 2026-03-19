@@ -21,13 +21,13 @@ DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NA
 
 # ─── OLLAMA (LOCAL AI) ───────────────────────────────────────
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
-DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "mistral")
+DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "mistral:7b-instruct-q4_K_M")
 
 # Available models — fast / balanced / accurate
 AVAILABLE_MODELS = {
     "fast":     "phi3:mini",
-    "balanced": "mistral",
-    "accurate": "llama3.1",
+    "balanced": "mistral:7b-instruct-q4_K_M",
+    "accurate": "llama3.1:latest",
 }
 
 # ─── CHROMADB (VECTOR DATABASE) ─────────────────────────────

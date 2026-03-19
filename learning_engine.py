@@ -5,6 +5,7 @@ Uses RAG: Retrieval-Augmented Generation
 """
 
 import logging
+import re
 import time
 import httpx
 import chromadb
@@ -20,6 +21,12 @@ from config import (
 )
 
 logger = logging.getLogger(__name__)
+
+GREETING_RE = re.compile(r"^\s*(hi|hello|hey|greetings|good\s+morning|good\s+afternoon|good\s+evening)[\s!.,]*$", re.IGNORECASE)
+
+def is_greeting(text: str) -> bool:
+    """Detect simple greetings so the bot can respond naturally even without context."""
+    return bool(GREETING_RE.match(text.strip()))
 
 
 # ─── CHROMADB SETUP ──────────────────────────────────────────
@@ -196,7 +203,7 @@ def search_knowledge_base(
 async def query_ollama(
     prompt: str,
     model: str,
-    timeout: int = 60,
+    timeout: int = 120,
 ) -> str:
     """
     Send prompt to local Ollama and get response.

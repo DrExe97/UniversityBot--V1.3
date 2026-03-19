@@ -29,7 +29,7 @@ class DocumentStatus(str, Enum):
 class QuestionRequest(BaseModel):
     question: str = Field(..., min_length=3, max_length=1000, description="The question to ask")
     session_id: Optional[str] = Field(None, description="Session ID to group conversation (auto-generated if not provided)")
-    model_speed: ModelSpeed = Field(ModelSpeed.balanced, description="Model speed: fast / balanced / accurate")
+    model_speed: ModelSpeed = Field(ModelSpeed.fast, description="Model speed: fast / balanced / accurate")
 
     @validator("question")
     def question_not_empty(cls, v):

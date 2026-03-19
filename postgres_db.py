@@ -163,6 +163,22 @@ async def get_session_history(session_id: str, limit: int = 20) -> List[Dict]:
     return [dict(r) for r in rows]
 
 
+async def get_recent_conversations(limit: int = 20) -> List[Dict]:
+    """Get recent conversations across all sessions."""
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch("""
+            SELECT c.id::text, c.session_id, c.question, c.answer,
+                   c.confidence, c.model_used, c.created_at,
+                   f.rating
+            FROM conversations c
+            LEFT JOIN feedback f ON f.conversation_id = c.id
+            ORDER BY c.created_at DESC
+            LIMIT $1
+        """, limit)
+    return [dict(r) for r in rows]
+
+
 # ─── FEEDBACK ────────────────────────────────────────────────
 
 async def save_feedback(
