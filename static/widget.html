@@ -325,6 +325,7 @@
 <div id="chat-panel">
   <!-- Header -->
   <div class="chat-header">
+    <button id="history-btn" onclick="toggleHistory()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);cursor:pointer;padding:4px 8px;border-radius:6px;font-size:14px;transition:all .15s;margin-right:8px;" title="View conversation history">☰</button>
     <div class="avatar">🎓</div>
     <div class="header-info">
       <div class="header-name">ZU AI</div>
@@ -333,7 +334,6 @@
         <span id="status-text">Online</span>
       </div>
     </div>
-    <button onclick="toggleHistory()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);cursor:pointer;padding:4px 8px;border-radius:6px;font-size:14px;transition:all .15s;" title="View conversation history">📋 History</button>
     <span class="model-badge" id="model-label">llama-3.1-8b-instant</span>
   </div>
 
