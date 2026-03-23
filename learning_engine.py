@@ -1,6 +1,6 @@
 """
 learning_engine.py - The AI brain of the chatbot
-Handles: embeddings, vector search (ChromaDB), answer generation (Ollama)
+Handles: embeddings, vector search (ChromaDB), answer generation (Ollama/Groq)
 Uses RAG: Retrieval-Augmented Generation
 """
 
@@ -12,12 +12,13 @@ import chromadb
 from chromadb.utils import embedding_functions
 from typing import List, Tuple, Optional
 from uuid import uuid4
+from groq import Groq
 
 from config import (
     CHROMA_PATH, CHROMA_COLLECTION, EMBEDDING_MODEL,
     OLLAMA_URL, SYSTEM_PROMPT, CHUNK_SIZE, CHUNK_OVERLAP,
     MAX_CHUNKS_PER_QUERY, CONFIDENCE_THRESHOLD, MIN_CONTEXT_LENGTH,
-    get_model,
+    get_model, GROQ_API_KEY, LLM_PROVIDER,
 )
 
 logger = logging.getLogger(__name__)
@@ -203,7 +204,7 @@ def search_knowledge_base(
 async def query_ollama(
     prompt: str,
     model: str,
-    timeout: int = 120,
+    timeout: int = 180,
 ) -> str:
     """
     Send prompt to local Ollama and get response.
@@ -217,15 +218,19 @@ async def query_ollama(
         "options": {
             "temperature": 0.3,    # lower = more factual, less creative
             "top_p": 0.9,
-            "num_predict": 512,    # max tokens in response
+            "num_predict": 256,    # max tokens in response (smaller → faster)
         }
     }
 
     try:
+        logger.info(f"Querying Ollama (model={model} timeout={timeout}s prompt_len={len(prompt)})")
+        t0 = time.time()
         async with httpx.AsyncClient(timeout=timeout) as client:
             response = await client.post(url, json=payload)
             response.raise_for_status()
             data = response.json()
+            elapsed = time.time() - t0
+            logger.info(f"Ollama response received in {elapsed:.1f}s")
             return data.get("response", "").strip()
 
     except httpx.ConnectError:
@@ -239,6 +244,37 @@ async def query_ollama(
     except Exception as e:
         logger.error(f"Ollama error: {e}")
         raise RuntimeError(f"AI model error: {str(e)}")
+
+
+async def query_groq(
+    prompt: str,
+    model: str,
+    timeout: int = 60,
+) -> str:
+    """
+    Send prompt to Groq API and get response.
+    """
+    if not GROQ_API_KEY:
+        raise ValueError("GROQ_API_KEY is not set")
+
+    client = Groq(api_key=GROQ_API_KEY)
+
+    try:
+        logger.info(f"Querying Groq (model={model} timeout={timeout}s prompt_len={len(prompt)})")
+        t0 = time.time()
+        response = client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=512,
+            temperature=0.3,
+        )
+        elapsed = time.time() - t0
+        logger.info(f"Groq response received in {elapsed:.1f}s")
+        return response.choices[0].message.content.strip()
+
+    except Exception as e:
+        logger.error(f"Groq error: {e}")
+        raise RuntimeError(f"Groq API error: {str(e)}")
 
 
 async def check_ollama_health() -> dict:
@@ -264,7 +300,7 @@ async def ask_question(
     Full RAG pipeline:
     1. Search knowledge base for relevant chunks
     2. Build context prompt
-    3. Query Ollama
+    3. Query AI provider (Ollama or Groq based on LLM_PROVIDER)
     4. Return answer with metadata
 
     Returns dict with: answer, confidence, model_used,
@@ -273,8 +309,28 @@ async def ask_question(
     start_time = time.time()
     model = get_model(model_speed)
 
+    # Quick handling for greetings (avoid unnecessary model calls)
+    if is_greeting(question):
+        logger.info(f"Detected greeting: '{question}' - responding instantly")
+        answer = (
+            "Hello! I'm your university assistant. "
+            "Ask me anything about admissions, programs, fees, campus life, or other university topics."
+        )
+        processing_ms = int((time.time() - start_time) * 1000)
+        return {
+            "answer": answer,
+            "confidence": 1.0,
+            "model_used": "system",
+            "sources_found": 0,
+            "low_confidence": False,
+            "processing_ms": processing_ms,
+        }
+
     # Step 1: Retrieve relevant context
+    step1_start = time.time()
     relevant_chunks, confidence = search_knowledge_base(question)
+    step1_ms = int((time.time() - step1_start) * 1000)
+    logger.info(f"Vector search time: {step1_ms}ms (found {len(relevant_chunks)} chunks)")
     sources_found = len(relevant_chunks)
 
     # Step 2: Build context string
@@ -284,7 +340,14 @@ async def ask_question(
         context = "No relevant information found in the knowledge base."
 
     # Step 3: Check if context is substantial enough
-    if len(context) < MIN_CONTEXT_LENGTH or not relevant_chunks:
+    # For general university questions, allow AI to provide helpful guidance even without specific context
+    general_questions = any(keyword in question.lower() for keyword in [
+        'fee', 'cost', 'price', 'pay', 'tuition', 'admission', 'application',
+        'campus', 'visit', 'contact', 'phone', 'email', 'address', 'location',
+        'how much', 'how to', 'where', 'when'
+    ])
+
+    if len(context) < MIN_CONTEXT_LENGTH and not relevant_chunks and not general_questions:
         answer = (
             "I don't have enough information to answer that question. "
             "Please try uploading relevant university documents first, "
@@ -294,16 +357,22 @@ async def ask_question(
         model_used = "none"
     else:
         # Step 4: Build the prompt
+        build_start = time.time()
         prompt = SYSTEM_PROMPT.format(
             context=context,
             question=question,
         )
+        build_ms = int((time.time() - build_start) * 1000)
+        logger.info(f"Prompt build time: {build_ms}ms (prompt length: {len(prompt)} chars)")
 
-        # Step 5: Query Ollama
+        # Step 5: Query AI provider
         try:
-            answer = await query_ollama(prompt, model)
+            if LLM_PROVIDER.lower() == "groq":
+                answer = await query_groq(prompt, model)
+            else:
+                answer = await query_ollama(prompt, model)
             model_used = model
-        except (ConnectionError, TimeoutError, RuntimeError) as e:
+        except (ConnectionError, TimeoutError, RuntimeError, ValueError) as e:
             answer = f"I'm having trouble connecting to the AI engine. Error: {str(e)}"
             model_used = "error"
             confidence = 0.0

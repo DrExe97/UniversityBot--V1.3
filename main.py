@@ -67,6 +67,13 @@ async def lifespan(app: FastAPI):
     ollama_status = await ai.check_ollama_health()
     if ollama_status["status"] == "ok":
         logger.info(f"✓ Ollama ready — models: {ollama_status['models']}")
+        # Warm up the default model to avoid slow first request
+        try:
+            logger.info("Warming up AI model...")
+            await ai.query_ollama("Hello", "phi3:mini", timeout=30)
+            logger.info("✓ Model warmed up")
+        except Exception as e:
+            logger.warning(f"Model warm-up failed: {e}")
     else:
         logger.warning("✗ Ollama not reachable — start with: ollama serve")
 

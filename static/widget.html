@@ -263,13 +263,13 @@
         <span id="status-text">Online</span>
       </div>
     </div>
-    <span class="model-badge" id="model-label">mistral</span>
+    <span class="model-badge" id="model-label">llama-3.1-8b-instant</span>
   </div>
 
   <!-- Model selector -->
   <div class="model-row">
-    <button class="model-opt" onclick="setModel('fast')" data-model="fast">⚡ Fast</button>
-    <button class="model-opt active" onclick="setModel('balanced')" data-model="balanced">⚖️ Balanced</button>
+    <button class="model-opt active" onclick="setModel('fast')" data-model="fast">⚡ Fast</button>
+    <button class="model-opt" onclick="setModel('balanced')" data-model="balanced">⚖️ Balanced</button>
     <button class="model-opt" onclick="setModel('accurate')" data-model="accurate">🎯 Accurate</button>
   </div>
 
@@ -307,7 +307,7 @@ const API = window.location.origin;  // Same server
 let sessionId = localStorage.getItem('uni_session') || 'session_' + Math.random().toString(36).slice(2);
 localStorage.setItem('uni_session', sessionId);
 
-let selectedModel = 'balanced';
+let selectedModel = 'fast';
 let isOpen = false;
 let isLoading = false;
 let lastConvId = null;
@@ -321,7 +321,7 @@ function toggleChat() {
 }
 
 // ── MODEL SELECTION ──
-const MODEL_NAMES = { fast: 'phi3:mini', balanced: 'mistral', accurate: 'llama3.1' };
+const MODEL_NAMES = { fast: 'llama-3.1-8b-instant', balanced: 'llama-3.3-70b-versatile', accurate: 'openai/gpt-oss-120b' };
 function setModel(speed) {
   selectedModel = speed;
   document.querySelectorAll('.model-opt').forEach(b => b.classList.toggle('active', b.dataset.model === speed));
