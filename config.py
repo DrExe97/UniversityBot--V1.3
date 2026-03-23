@@ -53,6 +53,7 @@ UPLOAD_PATH = os.getenv("UPLOAD_PATH", "./uploads")
 CHUNK_SIZE = 512          # characters per chunk
 CHUNK_OVERLAP = 50        # overlap between chunks
 MAX_CHUNKS_PER_QUERY = 3  # how many chunks to retrieve per question (reduce model latency)
+KEEP_UPLOADED_FILES = os.getenv("KEEP_UPLOADED_FILES", "false").lower() == "true"  # Keep original files after processing
 
 # ─── WEB CRAWLER ─────────────────────────────────────────────
 MAX_CRAWL_PAGES = 20       # max pages to crawl per domain

@@ -19,7 +19,7 @@ from fastapi.staticfiles import StaticFiles
 from config import (
     API_TITLE, API_VERSION, API_DESCRIPTION,
     ALLOWED_ORIGINS, UPLOAD_PATH, API_HOST, API_PORT,
-    DATABASE_URL, validate_config,
+    DATABASE_URL, validate_config, KEEP_UPLOADED_FILES,
 )
 from models import (
     QuestionRequest, QuestionResponse,
@@ -200,10 +200,13 @@ def _process_document(filepath: str, filename: str, task_id: str):
             pass
     finally:
         loop.close()
-        try:
-            os.remove(filepath)
-        except Exception:
-            pass
+        if not KEEP_UPLOADED_FILES:
+            try:
+                os.remove(filepath)
+            except Exception:
+                pass
+        else:
+            logger.info(f"📁 Kept file: {filepath}")
 
 
 def _process_crawl(start_url: str, max_pages: int, task_id: str):
