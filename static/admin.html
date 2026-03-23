@@ -9,20 +9,34 @@
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
 
   :root {
-    --bg:       #090b12;
-    --surface:  #111420;
-    --surface2: #181d2e;
-    --border:   #242840;
-    --accent:   #5b8dee;
-    --accent2:  #7c5ce8;
-    --text:     #dde2f5;
-    --muted:    #636b92;
-    --green:    #36d68c;
-    --yellow:   #f0a500;
-    --red:      #f05a5a;
-    --font:     'Syne', sans-serif;
-    --mono:     'DM Mono', monospace;
-  }
+   
+  /* ── BASE ── */
+  --bg:       #eef2f7;
+  --surface:  #ffffff;
+  --surface2: #f4f7fb;
+  --border:   #dbe3ef;
+
+  /* ── PRIMARY COLORS ── */
+  --accent:   #2563eb;   /* main blue */
+  --accent2:  #1e40af;   /* deep blue */
+
+  /* ── TEXT ── */
+  --text:     #0f172a;
+  --muted:    #64748b;
+
+  /* ── STATUS COLORS ── */
+  --green:    #22c55e;
+  --yellow:   #f59e0b;
+  --red:      #ef4444;
+
+  /* ── OPTIONAL EXTRA (from widget) ── */
+  --highlight:   #fbbf24;
+  --accent-glow: #9e972a;
+
+  /* ── FONTS ── */
+  --font:     'DM Sans', sans-serif;
+  --mono:     'DM Mono', monospace;
+}
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -69,11 +83,78 @@
   .dot.green { background: var(--green); animation: pulse 2s infinite; }
   @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.3} }
 
+  /* ── THEME SWITCH ── */
+  .dark-theme {
+    --bg: #050914;
+    --surface: #0d1731;
+    --surface2: #101f3f;
+    --border: #223359;
+    --text: #e2e8ff;
+    --muted: #a5b7d7;
+    --accent: #60a5fa;
+    --accent2: #93c5fd;
+    --green: #34d399;
+    --yellow: #facc15;
+    --red: #f87171;
+  }
+
+  /* Additional dark panel overrides */
+  .dark-theme .panel {
+    background: #0f1a3a;
+    border-color: #223459;
+  }
+  .dark-theme .panel-header {
+    background: #0b1630;
+    border-bottom-color: #223459;
+  }
+  .dark-theme .btn-ghost {
+    background: #1b2a4c;
+    border-color: #2b3f6a;
+    color: #d8e2ff;
+  }
+  .dark-theme .btn-ghost:hover {
+    background: #2a3f6a;
+  }
+  .dark-theme .stat-card {
+    background: #0f1b3c;
+    border-color: #243865;
+  }
+  .dark-theme .sidebar {
+    background: linear-gradient(180deg, #07102a, #091a3d);
+    border-right-color: #1b2f55;
+  }
+  .dark-theme .sidebar .nav-item:hover {
+    background: #1a2f5b;
+    color: #d8e4ff;
+  }
+
+  .light-theme {
+    --bg: #eef2f7;
+    --surface: #ffffff;
+    --surface2: #f4f7fb;
+    --border: #dbe3ef;
+    --text: #0f172a;
+    --muted: #64748b;
+    --accent: #2563eb;
+    --accent2: #1e40af;
+    --green: #22c55e;
+    --yellow: #f59e0b;
+    --red: #ef4444;
+  }
+
   /* ── MAIN ── */
   .main {
     margin-left: 220px;
     padding: 28px 32px;
     min-height: 100vh;
+    background: linear-gradient(180deg, rgba(235, 244, 255, 0.8), rgba(221, 237, 255, 0.95));
+  }
+
+  .color-panel {
+    height: 6px;
+    background: linear-gradient(90deg, #0254c7 0%, #1a73e8 35%, #fcbf07 70%, #ff8c00 100%);
+    margin-bottom: 12px;
+    border-radius: 3px;
   }
   .page { display: none; }
   .page.active { display: block; }
@@ -83,8 +164,11 @@
     display: flex; justify-content: space-between; align-items: center;
     margin-bottom: 28px;
   }
-  .page-title { font-size: 22px; font-weight: 700; }
+  .page-title { font-size: 22px; font-weight: 700; color: var(--text); }
   .page-subtitle { font-size: 13px; color: var(--muted); margin-top: 3px; }
+
+  .dark-theme .page-title { color: #e9eeff; }
+  .dark-theme .page-subtitle { color: #a3b5dc; }
 
   /* ── STAT CARDS ── */
   .stat-grid {
@@ -210,7 +294,7 @@
   <div class="sidebar-logo">
     <span class="emoji">🎓</span>
     <div>
-      University Bot
+      ZU AI
       <span>Admin Panel v1.3</span>
     </div>
   </div>
@@ -241,12 +325,16 @@
 
   <!-- ── DASHBOARD ── -->
   <div class="page active" id="page-dashboard">
+    <div class="color-panel"></div>
     <div class="page-header">
       <div>
         <div class="page-title">Dashboard</div>
         <div class="page-subtitle">Real-time analytics overview</div>
       </div>
-      <button class="btn btn-ghost" onclick="loadDashboard()">↻ Refresh</button>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button class="btn btn-ghost" onclick="toggleTheme()" id="theme-btn">🌙 Dark Mode</button>
+        <button class="btn btn-ghost" onclick="loadDashboard()">↻ Refresh</button>
+      </div>
     </div>
 
     <div class="stat-grid" id="stat-grid">
@@ -357,8 +445,8 @@
     <div class="panel">
       <div style="padding:0">
         <table id="conv-table">
-          <thead><tr><th>Question</th><th>Answer</th><th>Confidence</th><th>Model</th><th>Rating</th><th>Time</th></tr></thead>
-          <tbody id="conv-body"><tr><td colspan="6" style="color:var(--muted);text-align:center;padding:20px">Loading recent conversations...</td></tr></tbody>
+          <thead><tr><th>Question</th><th>Answer</th><th>Confidence</th><th>Model</th><th>Rating</th><th>Session ID</th><th>Time</th></tr></thead>
+          <tbody id="conv-body"><tr><td colspan="7" style="color:var(--muted);text-align:center;padding:20px">Loading recent conversations...</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -415,6 +503,26 @@ async function checkHealth() {
     document.getElementById('server-status').textContent = 'Server offline';
   }
 }
+
+// ── THEME MANAGEMENT ──
+function setTheme(theme) {
+  document.body.classList.remove('light-theme', 'dark-theme');
+  document.body.classList.add(`${theme}-theme`);
+  localStorage.setItem('admin_theme', theme);
+  document.getElementById('theme-btn').textContent = theme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+}
+
+function toggleTheme() {
+  const current = localStorage.getItem('admin_theme') || 'light';
+  setTheme(current === 'dark' ? 'light' : 'dark');
+}
+
+function initTheme() {
+  const saved = localStorage.getItem('admin_theme') || 'light';
+  setTheme(saved);
+}
+
+initTheme();
 
 // ── DASHBOARD ──
 async function loadDashboard() {
@@ -524,7 +632,7 @@ async function loadConversations() {
     const tbody = document.getElementById('conv-body');
 
     if (!d.conversations.length) {
-      tbody.innerHTML = '<tr><td colspan="6" style="color:var(--muted);text-align:center;padding:20px">No conversations yet</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" style="color:var(--muted);text-align:center;padding:20px">No conversations yet</td></tr>';
       return;
     }
 
@@ -536,6 +644,7 @@ async function loadConversations() {
         <td><span class="badge ${col}">${(c.confidence * 100).toFixed(0)}%</span></td>
         <td style="font-family:var(--mono);font-size:11px">${c.model_used}</td>
         <td>${c.rating ? '★'.repeat(c.rating) : '—'}</td>
+        <td style="font-family:var(--mono);font-size:11px">${c.session_id}</td>
         <td style="font-size:11px;color:var(--muted)">${new Date(c.created_at).toLocaleString()}</td>
       </tr>`;
     }).join('');
